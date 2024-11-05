@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "__generated__"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URI")
+}
+
+model User {
+  id String @id @default(uuid())
+
+  picture     String?
+  displayName String  @map("display_name")
+
+  email    String @unique
+  password String
+
+  role     UserRole   @default(USER)
+  method   AuthMethod
+  accounts Account[]
+
+  isVerified         Boolean @default(false) @map("is_verified")
+  isTwoFactorEnabled Boolean @default(false) @map("is_two_factor_enabled")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Account {
+  id String @id @default(uuid())
+
+  provider String
+
+  accessToken  String? @map("access_token")
+  refreshToken String? @map("refresh_token")
+  expiresAt    Int     @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  User   User   @relation(fields: [userId], references: [id])
+  userId String @map("user_id")
+
+  @@map("accounts")
+}
+
+model Token {
+  id        String    @id @default(uuid())
+  email     String
+  type      TokenType
+  expiresIn DateTime  @map("expires_in")
+
+  @@map("tokens")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum AuthMethod {
+  CREDENTIALS
+  GITHUB
+  GOOGLE
+  YANDEX
+}
+
+enum TokenType {
+  VERIFICATION
+  TWO_FACTOR
+  PASSWORD_RESET
+}
