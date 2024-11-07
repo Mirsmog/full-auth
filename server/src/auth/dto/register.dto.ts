@@ -9,27 +9,23 @@ import {
 import { IsPasswordsMatchingConstraint } from '@/libs/common/decorators/is-passwords-matching-constraint.decorator';
 
 export class RegisterDto {
-  @IsString({ message: 'Name must be a string.' })
-  @IsNotEmpty({ message: 'Name is required.' })
+  @IsString()
+  @IsNotEmpty()
   name: string;
 
-  @IsString({ message: 'Email must be a string.' })
-  @IsEmail({}, { message: 'Invalid email format.' })
-  @IsNotEmpty({ message: 'Email is required.' })
+  @IsString()
+  @IsEmail()
+  @IsNotEmpty()
   email: string;
 
-  @IsString({ message: 'Password must be a string.' })
-  @IsNotEmpty({ message: 'Password is required.' })
-  @MinLength(6, {
-    message: 'Password must be at least 6 characters long.',
-  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
   password: string;
 
-  @IsString({ message: 'Password confirmation must be a string.' })
-  @IsNotEmpty({ message: 'Password confirmation field cannot be empty.' })
-  @MinLength(6, {
-    message: 'Password confirmation must be at least 6 characters long.',
-  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
   @Validate(IsPasswordsMatchingConstraint, {
     message: 'Passwords do not match.',
   })

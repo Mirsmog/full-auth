@@ -15,6 +15,7 @@ import { verify } from 'argon2';
 import { ConfigService } from '@nestjs/config';
 import { ProviderService } from './provider/provider.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { EmailVerificationService } from './email-verification/email-verification.service';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly prismaService: PrismaService,
     private readonly provideService: ProviderService,
     private readonly configService: ConfigService,
+    private readonly emailVerification: EmailVerificationService,
   ) {}
 
   public async register(req: Request, dto: RegisterDto) {
@@ -42,7 +44,12 @@ export class AuthService {
       isVerified: false,
     });
 
-    return this.saveSession(req, newUser);
+    await this.emailVerification.sendVerificationToken(newUser.email);
+
+    return {
+      message:
+        'You have successfully registered. Please confirm your email. A message has been sent to your email address.',
+    };
   }
 
   public async login(req: Request, dto: LoginDto) {
@@ -59,6 +66,14 @@ export class AuthService {
     if (!isPasswordMach) {
       throw new UnauthorizedException(
         'Invalid password. Please verify that you have entered the correct password or use the password reset option if you have forgotten it.',
+      );
+    }
+
+    await this.emailVerification.sendVerificationToken(existingUser.email);
+
+    if (!existingUser.isVerified) {
+      throw new UnauthorizedException(
+        'Your email is not confirmed. Please check your email and confirm your address.',
       );
     }
 
@@ -129,7 +144,7 @@ export class AuthService {
     });
   }
 
-  private async saveSession(req: Request, user: User) {
+  public async saveSession(req: Request, user: User) {
     return new Promise((resolve, reject) => {
       req.session.userId = user.id;
       req.session.save((err) => {

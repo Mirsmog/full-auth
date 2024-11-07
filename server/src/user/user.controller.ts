@@ -1,8 +1,8 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { UserService } from './user.service';
-import { Authorized } from '@/auth/decorators/authorized.decorator';
-import { Authorization } from '@/auth/decorators/auth.decorator';
 import { UserRole } from '@/prisma/__generated__';
+import { Authorized } from '@/auth/decorators/authorized.decorator';
+import { UserService } from './user.service';
+import { Authorization } from '@/auth/decorators/auth.decorator';
 
 @Controller('user')
 export class UserController {

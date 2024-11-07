@@ -6,6 +6,8 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProviderModule } from './auth/provider/provider.module';
+import { MailModule } from './libs/mail/mail.module';
+import { EmailVerificationModule } from './auth/email-verification/email-verification.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { ProviderModule } from './auth/provider/provider.module';
     UserModule,
     AuthModule,
     ProviderModule,
+    MailModule,
+    EmailVerificationModule,
   ],
   controllers: [],
   providers: [],
