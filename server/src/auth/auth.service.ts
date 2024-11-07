@@ -13,11 +13,15 @@ import { User } from './entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { verify } from 'argon2';
 import { ConfigService } from '@nestjs/config';
+import { ProviderService } from './provider/provider.service';
+import { PrismaService } from '@/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
+    private readonly prismaService: PrismaService,
+    private readonly provideService: ProviderService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -38,7 +42,7 @@ export class AuthService {
       isVerified: false,
     });
 
-    return this.saveSesson(req, newUser);
+    return this.saveSession(req, newUser);
   }
 
   public async login(req: Request, dto: LoginDto) {
@@ -58,7 +62,55 @@ export class AuthService {
       );
     }
 
-    return this.saveSesson(req, existingUser);
+    return this.saveSession(req, existingUser);
+  }
+
+  public async extractProfileFromCode(
+    req: Request,
+    provider: string,
+    code: string,
+  ) {
+    const providerInstance = this.provideService.findByService(provider);
+    const profile = await providerInstance.findUserByCode(code);
+
+    const account = await this.prismaService.account.findFirst({
+      where: {
+        id: profile.id,
+        provider: profile.provider,
+      },
+    });
+
+    let user = account?.userId
+      ? await this.userService.findById(account.userId)
+      : null;
+
+    if (user) {
+      return this.saveSession(req, user);
+    }
+
+    user = await this.userService.create({
+      displayName: profile.name,
+      email: profile.email,
+      password: '',
+      picture: profile.picture,
+      isVerified: true,
+      method: AuthMethod[profile.provider.toUpperCase()],
+    });
+
+    if (!account) {
+      await this.prismaService.account.create({
+        data: {
+          userId: user.id,
+          type: 'oauth',
+          provider: profile.provider,
+          accessToken: profile.access_token,
+          refreshToken: profile.refresh_token,
+          expiresAt: profile.expires_at,
+        },
+      });
+    }
+
+    return this.saveSession(req, user);
   }
 
   public async logout(req: Request, res: Response): Promise<void> {
@@ -77,7 +129,7 @@ export class AuthService {
     });
   }
 
-  private async saveSesson(req: Request, user: User) {
+  private async saveSession(req: Request, user: User) {
     return new Promise((resolve, reject) => {
       req.session.userId = user.id;
       req.session.save((err) => {
